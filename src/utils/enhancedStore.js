@@ -1382,11 +1382,11 @@ The test consists of up to 10 questions from a pool of 100. You must answer at l
       ],
       
       categories: [
-        { id: 'all', label: 'All Topics', slug: 'all' },
-        { id: 'visas', label: 'Visa Types', slug: 'visas' },
-        { id: 'green-card', label: 'Green Card', slug: 'green-card' },
-        { id: 'citizenship', label: 'Citizenship', slug: 'citizenship' },
-        { id: 'forms', label: 'Forms & Fees', slug: 'forms' }
+        { id: 'all', label: 'All Topics', slug: 'all', icon: 'LayoutGrid' },
+        { id: 'visas', label: 'Visa Types', slug: 'visas', icon: 'FileText' },
+        { id: 'green-card', label: 'Green Card', slug: 'green-card', icon: 'CreditCard' },
+        { id: 'citizenship', label: 'Citizenship', slug: 'citizenship', icon: 'Flag' },
+        { id: 'forms', label: 'Forms & Fees', slug: 'forms', icon: 'ClipboardList' }
       ],
       
       searchQuery: '',

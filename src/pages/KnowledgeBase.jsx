@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen, Search, ChevronDown, ChevronUp, FileText,
   Clock, ExternalLink, Star, Filter, ThumbsUp, ThumbsDown,
-  HelpCircle, MessageCircle, Brain, TrendingUp, Eye, Sparkles
+  HelpCircle, MessageCircle, Brain, TrendingUp, Eye, Sparkles,
+  LayoutGrid, CreditCard, Flag, ClipboardList
 } from 'lucide-react'
 import { useKnowledgeStore, useGlobalStore, useUserStore } from '../utils/enhancedStore'
 
@@ -369,7 +370,11 @@ const KnowledgeBase = () => {
               onClick={() => setSelectedCategory(cat.id)}
               style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
             >
+<<<<<<< HEAD
               <cat.icon size={16} />
+=======
+              {React.createElement(categoryIcons[cat.icon] || FileText, { size: 16 })}
+>>>>>>> 06058a7 (feat: Add landing page with silver metallic design and glassmorphism)
               {cat.label}
               <span style={{
                 marginLeft: 'var(--spacing-xs)',

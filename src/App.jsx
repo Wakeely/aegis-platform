@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, NavLink } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Shield, Home, FileText, FolderOpen, FormInput,
   BarChart3, MapPin, MessageSquare, BookOpen,
   Users, CheckCircle, Search, Bell, Sun, Moon,
-  Menu, X, Bot, Target, Check, AlertTriangle, Info
+  Menu, X, Bot, Target, Check, AlertTriangle, Info,
+  Lock, Crown, ArrowRight
 } from 'lucide-react'
 
 import { useThemeStore, useGlobalStore, useUserStore } from './utils/enhancedStore'
+import { useSubscriptionStore } from './utils/subscriptionStore'
 
 // Import Pages
+import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import EligibilityNavigator from './pages/EligibilityNavigator'
 import DocumentManagement from './pages/DocumentManagement'
@@ -21,6 +24,7 @@ import InterviewPrep from './pages/InterviewPrep'
 import KnowledgeBase from './pages/KnowledgeBase'
 import AttorneyIntegration from './pages/AttorneyIntegration'
 import PostApproval from './pages/PostApproval'
+import Pricing from './pages/Pricing'
 
 // Toast Notification Component
 const ToastContainer = () => {
@@ -133,19 +137,22 @@ const ToastContainer = () => {
 // Sidebar Component
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation()
+  const { plan } = useSubscriptionStore()
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: Home },
+    { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/eligibility', label: 'Eligibility Navigator', icon: Target },
     { path: '/documents', label: 'Document Management', icon: FolderOpen },
     { path: '/forms', label: 'Form Generation', icon: FormInput },
-    { path: '/adjudicator', label: 'Adjudicator Insights', icon: BarChart3 },
+    { path: '/adjudicator', label: 'Adjudicator Insights', icon: BarChart3, premium: true },
     { path: '/cases', label: 'Case Tracking', icon: MapPin },
     { path: '/interview', label: 'Interview Prep', icon: MessageSquare },
     { path: '/knowledge', label: 'Knowledge Base', icon: BookOpen },
     { path: '/attorneys', label: 'Attorney Connection', icon: Users },
-    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle }
+    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle, premium: true }
   ]
+
+  const isLocked = (item) => item.premium && plan === 'FREE'
 
   return (
     <>
@@ -177,13 +184,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {navItems.slice(0, 5).map(item => (
               <NavLink
                 key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                to={isLocked(item) ? '/pricing' : item.path}
+                end={item.path === '/dashboard'}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''} ${isLocked(item) ? 'locked' : ''}`}
                 onClick={() => setIsOpen(false)}
               >
                 <item.icon size={20} />
                 <span>{item.label}</span>
+                {isLocked(item) && <Lock size={14} style={{ marginLeft: 'auto', color: 'var(--color-warning)' }} />}
               </NavLink>
             ))}
           </div>
@@ -193,14 +201,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {navItems.slice(5).map(item => (
               <NavLink
                 key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                to={isLocked(item) ? '/pricing' : item.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''} ${isLocked(item) ? 'locked' : ''}`}
                 onClick={() => setIsOpen(false)}
               >
                 <item.icon size={20} />
                 <span>{item.label}</span>
+                {isLocked(item) && <Lock size={14} style={{ marginLeft: 'auto', color: 'var(--color-warning)' }} />}
               </NavLink>
             ))}
+          </div>
+
+          <div className="nav-section">
+            <span className="nav-section-title">Account</span>
+            <NavLink
+              to="/pricing"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => setIsOpen(false)}
+            >
+              <Crown size={20} />
+              <span>Upgrade to Premium</span>
+            </NavLink>
           </div>
         </nav>
 
@@ -215,7 +236,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 width: '40px',
                 height: '40px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                background: plan === 'FREE' ? 'linear-gradient(135deg, #3B82F6, #8B5CF6)' : 'linear-gradient(135deg, #F59E0B, #F97316)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -223,12 +244,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <Bot size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: '600', fontSize: '14px' }}>AEGIS AI</div>
+                <div style={{ fontWeight: '600', fontSize: '14px' }}>
+                  {plan === 'FREE' ? 'AEGIS AI' : 'Premium AI'}
+                </div>
                 <div style={{ fontSize: '12px', color: 'var(--color-success)' }}>● Online</div>
               </div>
             </div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              9 Specialist Agents Ready
+              {plan === 'FREE' ? '9 Specialist Agents Ready' : 'Full AI Access Enabled'}
             </div>
           </div>
         </div>
@@ -242,6 +265,8 @@ const TopBar = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useThemeStore()
   const { user } = useUserStore()
   const { notifications, globalSearchQuery, setGlobalSearch } = useGlobalStore()
+  const { plan } = useSubscriptionStore()
+  const navigate = useNavigate()
 
   return (
     <header className="top-bar" style={{
@@ -273,7 +298,9 @@ const TopBar = ({ toggleSidebar }) => {
             borderRadius: '50%',
             animation: 'pulse 2s infinite'
           }} />
-          <span style={{ fontSize: '14px', fontWeight: '500' }}>AEGIS Navigator Active</span>
+          <span style={{ fontSize: '14px', fontWeight: '500' }}>
+            {plan === 'FREE' ? 'AEGIS Navigator Active' : 'Premium AI Active'}
+          </span>
         </div>
       </div>
 
@@ -296,6 +323,34 @@ const TopBar = ({ toggleSidebar }) => {
       </div>
 
       <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Back to Home Button */}
+        <button 
+          className="icon-button"
+          onClick={() => navigate('/')}
+          title="Go to Landing Page"
+        >
+          <Shield size={20} />
+        </button>
+
+        {/* Premium Badge */}
+        {plan !== 'FREE' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '6px 12px',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: 'var(--radius-full)',
+            color: 'var(--color-warning)',
+            fontSize: '0.75rem',
+            fontWeight: '600'
+          }}>
+            <Crown size={14} />
+            PREMIUM
+          </div>
+        )}
+
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
           <button className="icon-button">
@@ -332,7 +387,9 @@ const TopBar = ({ toggleSidebar }) => {
           width: '44px',
           height: '44px',
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+          background: plan === 'FREE' 
+            ? 'linear-gradient(135deg, #3B82F6, #8B5CF6)' 
+            : 'linear-gradient(135deg, #F59E0B, #F97316)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -372,9 +429,103 @@ const ScrollToTop = () => {
   return null
 }
 
+// Protected Route Component for Premium Pages
+const ProtectedRoute = ({ children, requirePremium = false }) => {
+  const { plan } = useSubscriptionStore()
+
+  if (requirePremium && plan === 'FREE') {
+    return <Navigate to="/pricing" replace />
+  }
+
+  return children
+}
+
+// Dashboard Layout Component
+// This wraps all authenticated app pages with the sidebar and topbar
+const DashboardLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  return (
+    <div className="app-container">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      
+      <main className="main-content">
+        <TopBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        
+        <AnimatePresence mode="wait">
+          <Routes>
+            <Route path="/dashboard" element={
+              <PageTransition>
+                <Dashboard />
+              </PageTransition>
+            } />
+            <Route path="/eligibility" element={
+              <PageTransition>
+                <EligibilityNavigator />
+              </PageTransition>
+            } />
+            <Route path="/documents" element={
+              <PageTransition>
+                <DocumentManagement />
+              </PageTransition>
+            } />
+            <Route path="/forms" element={
+              <PageTransition>
+                <FormGeneration />
+              </PageTransition>
+            } />
+            <Route path="/adjudicator" element={
+              <PageTransition>
+                <ProtectedRoute requirePremium>
+                  <AdjudicatorInsights />
+                </ProtectedRoute>
+              </PageTransition>
+            } />
+            <Route path="/cases" element={
+              <PageTransition>
+                <CaseTracking />
+              </PageTransition>
+            } />
+            <Route path="/interview" element={
+              <PageTransition>
+                <InterviewPrep />
+              </PageTransition>
+            } />
+            <Route path="/knowledge" element={
+              <PageTransition>
+                <KnowledgeBase />
+              </PageTransition>
+            } />
+            <Route path="/attorneys" element={
+              <PageTransition>
+                <AttorneyIntegration />
+              </PageTransition>
+            } />
+            <Route path="/post-approval" element={
+              <PageTransition>
+                <ProtectedRoute requirePremium>
+                  <PostApproval />
+                </ProtectedRoute>
+              </PageTransition>
+            } />
+            <Route path="/pricing" element={
+              <PageTransition>
+                <Pricing />
+              </PageTransition>
+            } />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </AnimatePresence>
+      </main>
+
+      {/* Toast Notifications */}
+      <ToastContainer />
+    </div>
+  )
+}
+
 // Main App Component
 const App = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { theme } = useThemeStore()
   const { setGlobalLoading } = useGlobalStore()
 
@@ -394,72 +545,13 @@ const App = () => {
   return (
     <Router>
       <ScrollToTop />
-      <div className="app-container">
-        <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-
-        <main className="main-content">
-          <TopBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={
-                <PageTransition>
-                  <Dashboard />
-                </PageTransition>
-              } />
-              <Route path="/eligibility" element={
-                <PageTransition>
-                  <EligibilityNavigator />
-                </PageTransition>
-              } />
-              <Route path="/documents" element={
-                <PageTransition>
-                  <DocumentManagement />
-                </PageTransition>
-              } />
-              <Route path="/forms" element={
-                <PageTransition>
-                  <FormGeneration />
-                </PageTransition>
-              } />
-              <Route path="/adjudicator" element={
-                <PageTransition>
-                  <AdjudicatorInsights />
-                </PageTransition>
-              } />
-              <Route path="/cases" element={
-                <PageTransition>
-                  <CaseTracking />
-                </PageTransition>
-              } />
-              <Route path="/interview" element={
-                <PageTransition>
-                  <InterviewPrep />
-                </PageTransition>
-              } />
-              <Route path="/knowledge" element={
-                <PageTransition>
-                  <KnowledgeBase />
-                </PageTransition>
-              } />
-              <Route path="/attorneys" element={
-                <PageTransition>
-                  <AttorneyIntegration />
-                </PageTransition>
-              } />
-              <Route path="/post-approval" element={
-                <PageTransition>
-                  <PostApproval />
-                </PageTransition>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AnimatePresence>
-        </main>
-
-        {/* Toast Notifications */}
-        <ToastContainer />
-      </div>
+      <Routes>
+        {/* Landing Page Route - No sidebar or topbar */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* All other routes use the Dashboard Layout */}
+        <Route path="/*" element={<DashboardLayout />} />
+      </Routes>
     </Router>
   )
 }
