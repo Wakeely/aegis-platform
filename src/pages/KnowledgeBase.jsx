@@ -32,6 +32,18 @@ const KnowledgeBase = () => {
   const [feedbackGiven, setFeedbackGiven] = useState(null)
   const [showAISuggestions, setShowAISuggestions] = useState(false)
 
+  // Category icons mapping
+  const categoryIcons = {
+    all: BookOpen,
+    visas: FileText,
+    'green-card': FileText,
+    citizenship: FileText,
+    travel: FileText,
+    employment: FileText,
+    family: FileText,
+    'document-guides': FileText
+  }
+
   // Filter articles based on search and category
   const filteredArticles = useMemo(() => {
     let results = searchQuery ? searchArticles(searchQuery) : articles
@@ -370,11 +382,7 @@ const KnowledgeBase = () => {
               onClick={() => setSelectedCategory(cat.id)}
               style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
             >
-<<<<<<< HEAD
-              <cat.icon size={16} />
-=======
               {React.createElement(categoryIcons[cat.icon] || FileText, { size: 16 })}
->>>>>>> 06058a7 (feat: Add landing page with silver metallic design and glassmorphism)
               {cat.label}
               <span style={{
                 marginLeft: 'var(--spacing-xs)',

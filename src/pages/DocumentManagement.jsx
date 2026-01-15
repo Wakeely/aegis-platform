@@ -1,10 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { 
   FolderOpen, Upload, FileText, FileCheck, FileX, 
   Trash2, Eye, Download, Search, Filter, CheckCircle,
   Clock, AlertCircle, Image, File, FileSpreadsheet, FileType,
-  Briefcase, Sparkles, Scan, Check, X, Loader2
+  Briefcase, Sparkles, Scan, Check, X, Loader2, Camera
 } from 'lucide-react'
 import { 
   useDocumentStore,
@@ -12,6 +13,7 @@ import {
 } from '../utils/enhancedStore'
 
 const DocumentManagement = () => {
+  const navigate = useNavigate()
   const { 
     documents, 
     addDocument, 
@@ -432,12 +434,12 @@ const DocumentManagement = () => {
             />
           </div>
           <button 
-            className="glass-button"
-            onClick={() => setShowScanner(!showScanner)}
+            className="glass-button primary"
+            onClick={() => navigate('/documents/scan')}
             style={{ padding: 'var(--spacing-sm) var(--spacing-md)' }}
           >
-            <Sparkles size={16} />
-            AI Scan
+            <Camera size={16} />
+            Scan Document
           </button>
         </div>
       </div>

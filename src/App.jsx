@@ -6,17 +6,23 @@ import {
   BarChart3, MapPin, MessageSquare, BookOpen,
   Users, CheckCircle, Search, Bell, Sun, Moon,
   Menu, X, Bot, Target, Check, AlertTriangle, Info,
-  Lock, Crown, ArrowRight
+  Lock, Crown, ArrowRight, LogOut, User, Scan
 } from 'lucide-react'
 
 import { useThemeStore, useGlobalStore, useUserStore } from './utils/enhancedStore'
-import { useSubscriptionStore } from './utils/subscriptionStore'
+import { useSubscriptionStore } from './utils/enhancedSubscriptionStore'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+import UpgradeModal from './components/UpgradeModal'
 
 // Import Pages
 import LandingPage from './pages/LandingPage'
+import SignIn from './pages/SignIn'
+import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
 import EligibilityNavigator from './pages/EligibilityNavigator'
 import DocumentManagement from './pages/DocumentManagement'
+import DocumentScanner from './pages/DocumentScanner'
 import FormGeneration from './pages/FormGeneration'
 import AdjudicatorInsights from './pages/AdjudicatorInsights'
 import CaseTracking from './pages/CaseTracking'
@@ -25,6 +31,7 @@ import KnowledgeBase from './pages/KnowledgeBase'
 import AttorneyIntegration from './pages/AttorneyIntegration'
 import PostApproval from './pages/PostApproval'
 import Pricing from './pages/Pricing'
+import SubscriptionManagement from './pages/SubscriptionManagement'
 
 // Toast Notification Component
 const ToastContainer = () => {
@@ -138,6 +145,7 @@ const ToastContainer = () => {
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation()
   const { plan } = useSubscriptionStore()
+  const { user, logout } = useAuth()
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -149,10 +157,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { path: '/interview', label: 'Interview Prep', icon: MessageSquare },
     { path: '/knowledge', label: 'Knowledge Base', icon: BookOpen },
     { path: '/attorneys', label: 'Attorney Connection', icon: Users },
-    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle, premium: true }
+    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle, premium: true },
+    { path: '/subscription', label: 'Subscription', icon: Crown }
   ]
 
   const isLocked = (item) => item.premium && plan === 'FREE'
+
+  const handleLogout = () => {
+    logout()
+    setIsOpen(false)
+  }
 
   return (
     <>
@@ -194,6 +208,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 {isLocked(item) && <Lock size={14} style={{ marginLeft: 'auto', color: 'var(--color-warning)' }} />}
               </NavLink>
             ))}
+          </div>
+
+          <div className="nav-section">
+            <span className="nav-section-title">Quick Actions</span>
+            <NavLink
+              to="/documents/scan"
+              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              onClick={() => setIsOpen(false)}
+            >
+              <Scan size={20} />
+              <span>Scan Document</span>
+            </NavLink>
           </div>
 
           <div className="nav-section">
@@ -255,6 +281,62 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </div>
           </div>
         </div>
+
+        {/* User Profile Section in Sidebar */}
+        {user && (
+          <div style={{
+            marginTop: '16px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--glass-border)'
+          }}>
+            <div className="glass-card" style={{ padding: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '600',
+                  color: 'white',
+                  fontSize: '14px'
+                }}>
+                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: '600',
+                    fontSize: '14px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {user.name || 'User'}
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {user.email}
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="icon-button"
+                  title="Sign Out"
+                  style={{ padding: '8px' }}
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
     </>
   )
@@ -263,10 +345,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 // Top Bar Component
 const TopBar = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useThemeStore()
-  const { user } = useUserStore()
+  const { user, logout } = useAuth()
   const { notifications, globalSearchQuery, setGlobalSearch } = useGlobalStore()
   const { plan } = useSubscriptionStore()
   const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <header className="top-bar" style={{
@@ -275,8 +362,8 @@ const TopBar = ({ toggleSidebar }) => {
       zIndex: 50
     }}>
       <div className="top-bar-left">
-        <button 
-          className="icon-button mobile-menu-button" 
+        <button
+          className="icon-button mobile-menu-button"
           onClick={toggleSidebar}
         >
           <Menu size={20} />
@@ -324,7 +411,7 @@ const TopBar = ({ toggleSidebar }) => {
 
       <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Back to Home Button */}
-        <button 
+        <button
           className="icon-button"
           onClick={() => navigate('/')}
           title="Go to Landing Page"
@@ -382,23 +469,46 @@ const TopBar = ({ toggleSidebar }) => {
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
-        {/* User Avatar */}
-        <div style={{
-          width: '44px',
-          height: '44px',
-          borderRadius: '50%',
-          background: plan === 'FREE' 
-            ? 'linear-gradient(135deg, #3B82F6, #8B5CF6)' 
-            : 'linear-gradient(135deg, #F59E0B, #F97316)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: '600',
-          color: 'white',
-          cursor: 'pointer',
-          border: '2px solid var(--glass-border)'
-        }}>
-          {user.avatar}
+        {/* User Menu */}
+        <div className="user-menu" style={{ position: 'relative' }}>
+          {user ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--glass-surface)',
+              border: '1px solid var(--glass-border)'
+            }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '600',
+                color: 'white',
+                fontSize: '14px'
+              }}>
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                {user.name || 'User'}
+              </span>
+            </div>
+          ) : (
+            <button
+              className="glass-button primary"
+              onClick={() => navigate('/signin')}
+            >
+              <User size={18} />
+              Sign In
+            </button>
+          )}
         </div>
       </div>
     </header>
@@ -429,12 +539,75 @@ const ScrollToTop = () => {
   return null
 }
 
-// Protected Route Component for Premium Pages
-const ProtectedRoute = ({ children, requirePremium = false }) => {
+// Protected Route Component for Premium Pages with Upgrade Modal
+const PremiumRoute = ({ children, feature = 'premium_feature', title = 'Premium Feature', description = 'Upgrade to Premium to access this feature.' }) => {
   const { plan } = useSubscriptionStore()
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
 
-  if (requirePremium && plan === 'FREE') {
-    return <Navigate to="/pricing" replace />
+  if (plan === 'FREE') {
+    return (
+      <>
+        {/* Show upgrade modal instead of redirecting */}
+        <UpgradeModal
+          isOpen={true}
+          onClose={() => {
+            setShowUpgradeModal(false)
+            window.history.back()
+          }}
+          feature={feature}
+          title={title}
+          description={description}
+        />
+        {/* Show a locked placeholder */}
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          minHeight: '60vh',
+          padding: 'var(--spacing-xl)',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 'var(--spacing-lg)'
+          }}>
+            <Crown size={40} style={{ color: 'var(--color-warning)' }} />
+          </div>
+          <h2 style={{ marginBottom: 'var(--spacing-sm)' }}>Premium Feature</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-lg)' }}>
+            {description}
+          </p>
+          <button
+            onClick={() => setShowUpgradeModal(true)}
+            className="glass-button primary"
+            style={{
+              background: 'var(--gradient-primary)',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 'var(--spacing-sm)'
+            }}
+          >
+            <Crown size={18} />
+            Upgrade to Premium
+          </button>
+        </div>
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          feature={feature}
+          title={title}
+          description={description}
+        />
+      </>
+    )
   }
 
   return children
@@ -448,10 +621,10 @@ const DashboardLayout = () => {
   return (
     <div className="app-container">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      
+
       <main className="main-content">
         <TopBar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        
+
         <AnimatePresence mode="wait">
           <Routes>
             <Route path="/dashboard" element={
@@ -469,6 +642,11 @@ const DashboardLayout = () => {
                 <DocumentManagement />
               </PageTransition>
             } />
+            <Route path="/documents/scan" element={
+              <PageTransition>
+                <DocumentScanner />
+              </PageTransition>
+            } />
             <Route path="/forms" element={
               <PageTransition>
                 <FormGeneration />
@@ -476,9 +654,13 @@ const DashboardLayout = () => {
             } />
             <Route path="/adjudicator" element={
               <PageTransition>
-                <ProtectedRoute requirePremium>
+                <PremiumRoute 
+                  feature="adjudicator_insights"
+                  title="Adjudicator Insights"
+                  description="Unlock AI-powered insights into how immigration officers evaluate cases. Get ahead with predictive analytics."
+                >
                   <AdjudicatorInsights />
-                </ProtectedRoute>
+                </PremiumRoute>
               </PageTransition>
             } />
             <Route path="/cases" element={
@@ -503,9 +685,18 @@ const DashboardLayout = () => {
             } />
             <Route path="/post-approval" element={
               <PageTransition>
-                <ProtectedRoute requirePremium>
+                <PremiumRoute 
+                  feature="post_approval_tools"
+                  title="Post-Approval Tools"
+                  description="Access citizenship guides, travel documents, and advanced tools after your case is approved."
+                >
                   <PostApproval />
-                </ProtectedRoute>
+                </PremiumRoute>
+              </PageTransition>
+            } />
+            <Route path="/subscription" element={
+              <PageTransition>
+                <SubscriptionManagement />
               </PageTransition>
             } />
             <Route path="/pricing" element={
@@ -523,6 +714,14 @@ const DashboardLayout = () => {
     </div>
   )
 }
+
+// Auth Layout (for sign in/sign up pages - no sidebar or topbar)
+const AuthLayout = ({ children }) => (
+  <div className="auth-layout">
+    {children}
+    <ToastContainer />
+  </div>
+)
 
 // Main App Component
 const App = () => {
@@ -543,16 +742,34 @@ const App = () => {
   }, [setGlobalLoading])
 
   return (
-    <Router>
-      <ScrollToTop />
-      <Routes>
-        {/* Landing Page Route - No sidebar or topbar */}
-        <Route path="/" element={<LandingPage />} />
-        
-        {/* All other routes use the Dashboard Layout */}
-        <Route path="/*" element={<DashboardLayout />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          {/* Landing Page Route - No sidebar or topbar */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Auth Routes - No sidebar or topbar */}
+          <Route path="/signin" element={
+            <AuthLayout>
+              <SignIn />
+            </AuthLayout>
+          } />
+          <Route path="/signup" element={
+            <AuthLayout>
+              <SignUp />
+            </AuthLayout>
+          } />
+
+          {/* Protected Dashboard Routes - Requires Authentication */}
+          <Route path="/*" element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 

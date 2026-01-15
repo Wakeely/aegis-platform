@@ -5,10 +5,10 @@ import {
   Zap, Star, ArrowRight, CreditCard, Lock,
   FileText, Brain, Users, Calendar, BookOpen, CheckCircle
 } from 'lucide-react'
-import { useSubscriptionStore } from '../utils/subscriptionStore'
+import { useSubscription } from '../utils/enhancedSubscriptionStore'
 
 const PricingPage = () => {
-  const { plan, setPlan, isProcessing, upgradeToMonthly, upgradeToAnnual } = useSubscriptionStore()
+  const { plan, setPlan, isProcessing, upgradeToMonthly, upgradeToAnnual } = useSubscription()
   const [billingPeriod, setBillingPeriod] = useState('annual')
   
   const features = [
@@ -259,13 +259,13 @@ const PricingPage = () => {
               borderRadius: 'var(--radius-md)',
               border: '1px solid var(--glass-border)',
               background: 'transparent',
-              color: 'var(--text-primary)',
+              color: 'var(--text-secondary)',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: 'default',
               marginBottom: 'var(--spacing-xl)'
             }}
           >
-            Current Plan
+            Your Current Plan
           </motion.button>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
@@ -348,13 +348,15 @@ const PricingPage = () => {
               border: 'none',
               background: plan === 'PREMIUM_MONTHLY' ? 'var(--color-success)' : 'linear-gradient(135deg, var(--color-warning) 0%, #F97316 100%)',
               color: plan === 'PREMIUM_MONTHLY' ? 'white' : '#000',
-              fontWeight: '600',
-              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '1rem',
+              cursor: isProcessing || plan === 'PREMIUM_MONTHLY' ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 'var(--spacing-sm)',
-              marginBottom: 'var(--spacing-xl)'
+              marginBottom: 'var(--spacing-xl)',
+              boxShadow: plan !== 'PREMIUM_MONTHLY' ? '0 4px 15px rgba(245, 158, 11, 0.4)' : 'none'
             }}
           >
             {plan === 'PREMIUM_MONTHLY' ? (
@@ -376,7 +378,7 @@ const PricingPage = () => {
             ) : (
               <>
                 <Crown size={20} />
-                Upgrade to Premium
+                Select Monthly - $29.99/mo
               </>
             )}
           </motion.button>
@@ -486,13 +488,15 @@ const PricingPage = () => {
               border: 'none',
               background: plan === 'PREMIUM_ANNUAL' ? 'var(--color-success)' : 'var(--gradient-primary)',
               color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '1rem',
+              cursor: isProcessing || plan === 'PREMIUM_ANNUAL' ? 'default' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: 'var(--spacing-sm)',
-              marginBottom: 'var(--spacing-xl)'
+              marginBottom: 'var(--spacing-xl)',
+              boxShadow: plan !== 'PREMIUM_ANNUAL' ? '0 4px 20px rgba(59, 130, 246, 0.5)' : 'none'
             }}
           >
             {plan === 'PREMIUM_ANNUAL' ? (
@@ -514,7 +518,7 @@ const PricingPage = () => {
             ) : (
               <>
                 <Zap size={20} />
-                Save 33% - Go Annual
+                Select Annual - $249.99/yr
               </>
             )}
           </motion.button>

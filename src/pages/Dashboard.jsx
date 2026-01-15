@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { 
   Shield, FileText, Clock, CheckCircle, AlertCircle, 
   TrendingUp, Calendar, Users, BookOpen, ChevronRight,
@@ -169,12 +170,15 @@ const Dashboard = () => {
     }
   }
 
+  const navigate = useNavigate()
+
   const handleQuickAction = (action, path) => {
     addNotification({
       type: 'info',
       title: 'Navigating',
       message: `Opening ${path.replace('/', '')} module...`
     })
+    navigate(path)
   }
 
   return (
