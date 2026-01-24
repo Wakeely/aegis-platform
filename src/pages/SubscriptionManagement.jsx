@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { 
+import React, { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
   Crown, CreditCard, Calendar, Check, X, AlertTriangle,
   Zap, Shield, FileText, Database, BarChart3, Users,
   ChevronRight, Download, Settings, Loader2, Sparkles
@@ -13,7 +13,32 @@ const SubscriptionManagement = () => {
   const navigate = useNavigate()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  
+
+  // Wrap in try-catch to prevent blank page on errors
+  let subscriptionData
+  try {
+    subscriptionData = useSubscription()
+  } catch (error) {
+    console.error('Subscription hook error:', error)
+    return (
+      <div className="subscription-management" style={{ padding: 'var(--spacing-xl)' }}>
+        <div className="glass" style={{ padding: 'var(--spacing-xl)', textAlign: 'center' }}>
+          <AlertTriangle size={48} style={{ color: 'var(--color-warning)', marginBottom: 'var(--spacing-md)' }} />
+          <h2>Unable to load subscription data</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-lg)' }}>
+            Please try refreshing the page or signing in again.
+          </p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="glass-button primary"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const {
     plan,
     planName,
@@ -30,7 +55,7 @@ const SubscriptionManagement = () => {
     isProcessing,
     cancelSubscription,
     reactivateSubscription
-  } = useSubscription()
+  } = subscriptionData
 
   const handleCancel = async () => {
     await cancelSubscription()
@@ -251,31 +276,28 @@ const SubscriptionManagement = () => {
         </div>
       </motion.div>
 
-      {/* Usage Statistics */}
+      {/* Compact Usage Statistics */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--spacing-xl)' }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}
       >
         {/* Storage Usage */}
-        <div className="glass" style={{ padding: 'var(--spacing-xl)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-lg)' }}>
-            <Database size={20} style={{ color: 'var(--color-secondary)' }} />
-            <h3>Storage Usage</h3>
+        <div className="glass" style={{ padding: 'var(--spacing-md)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
+            <Database size={16} style={{ color: 'var(--color-secondary)' }} />
+            <h4 style={{ fontSize: '0.875rem', fontWeight: '600' }}>Storage</h4>
           </div>
           
-          <div style={{ marginBottom: 'var(--spacing-md)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--spacing-xs)' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                {storageUsage.used} MB used
-              </span>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                {storageUsage.limit} MB limit
+          <div style={{ marginBottom: 'var(--spacing-xs)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
+                {storageUsage.used}MB / {storageUsage.limit}MB
               </span>
             </div>
             <div style={{
-              height: '8px',
+              height: '6px',
               background: 'var(--bg-glass)',
               borderRadius: 'var(--radius-full)',
               overflow: 'hidden'
@@ -294,49 +316,36 @@ const SubscriptionManagement = () => {
               />
             </div>
           </div>
-          
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {isPremium 
-              ? 'Premium includes 1GB storage' 
-              : `${storageUsage.limit - storageUsage.used}MB remaining`
-            }
-          </p>
         </div>
 
         {/* Forms Usage */}
-        <div className="glass" style={{ padding: 'var(--spacing-xl)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-lg)' }}>
-            <FileText size={20} style={{ color: 'var(--color-secondary)' }} />
-            <h3>Forms Generated</h3>
+        <div className="glass" style={{ padding: 'var(--spacing-md)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
+            <FileText size={16} style={{ color: 'var(--color-secondary)' }} />
+            <h4 style={{ fontSize: '0.875rem', fontWeight: '600' }}>Forms</h4>
           </div>
           
-          <div style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: 'var(--spacing-sm)' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: 'var(--spacing-xs)' }}>
             {formsRemaining === 'unlimited' ? (
               <span style={{ color: 'var(--color-success)' }}>∞</span>
             ) : (
-              <>
-                <span style={{ color: 'var(--color-secondary)' }}>{formsRemaining}</span>
-                <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}> remaining</span>
-              </>
+              <span style={{ color: 'var(--text-primary)' }}>{formsRemaining}</span>
             )}
           </div>
           
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {isPremium 
-              ? 'Unlimited forms with Premium' 
-              : '3 free forms per month'
-            }
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            {isPremium ? 'Unlimited' : '3 free/month'}
           </p>
         </div>
 
         {/* Premium Features Status */}
-        <div className="glass" style={{ padding: 'var(--spacing-xl)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)', marginBottom: 'var(--spacing-lg)' }}>
-            <Zap size={20} style={{ color: isPremium ? 'var(--color-warning)' : 'var(--text-muted)' }} />
-            <h3>Premium Features</h3>
+        <div className="glass" style={{ padding: 'var(--spacing-md)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-xs)', marginBottom: 'var(--spacing-sm)' }}>
+            <Zap size={16} style={{ color: isPremium ? 'var(--color-warning)' : 'var(--text-muted)' }} />
+            <h4 style={{ fontSize: '0.875rem', fontWeight: '600' }}>Premium</h4>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-sm)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {[
               { name: 'AI Insights', active: true },
               { name: 'Mock Interview', active: true },

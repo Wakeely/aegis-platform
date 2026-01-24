@@ -1,21 +1,12 @@
 #!/bin/bash
+# Push GitHub commit
+# Run this command with your token:
+# git push https://ghp_YOUR_TOKEN_HERE@github.com/Wakeely/aegis-platform.git main
+
 cd /workspace/aegis-platform
-
-# Configure git to not prompt for credentials
-export GIT_TERMINAL_PROMPT=0
-export GIT_ASKPASS=echo
-
-# Add origin remote if it doesn't exist
-if ! git remote get-url origin &>/dev/null; then
-    echo "Adding origin remote..."
-    git remote add origin https://github.com/Wakeely/aegis-platform.git
-fi
-
-# Set up credential helper to avoid prompts
-git config credential.helper store
-
-echo "=== Pushing to GitHub ==="
-git push origin main --force 2>&1
-
+echo "To push your changes, run:"
+echo "git push https://ghp_YOUR_PERSONAL_ACCESS_TOKEN@github.com/Wakeely/aegis-platform.git main"
 echo ""
-echo "=== Push Complete ==="
+echo "Or if you have GitHub CLI installed:"
+echo "gh auth login"
+echo "git push origin main"

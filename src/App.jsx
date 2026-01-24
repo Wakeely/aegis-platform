@@ -6,7 +6,7 @@ import {
   BarChart3, MapPin, MessageSquare, BookOpen,
   Users, CheckCircle, Search, Bell, Sun, Moon,
   Menu, X, Bot, Target, Check, AlertTriangle, Info,
-  Lock, Crown, ArrowRight, LogOut, User, Scan
+  Lock, Crown, ArrowRight, LogOut, User, Scan, Calendar, Brain
 } from 'lucide-react'
 
 import { useThemeStore, useGlobalStore, useUserStore } from './utils/enhancedStore'
@@ -14,6 +14,7 @@ import { useSubscriptionStore } from './utils/enhancedSubscriptionStore'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import UpgradeModal from './components/UpgradeModal'
+import SearchResultsDropdown from './components/SearchResultsDropdown'
 
 // Import Pages
 import LandingPage from './pages/LandingPage'
@@ -32,6 +33,9 @@ import AttorneyIntegration from './pages/AttorneyIntegration'
 import PostApproval from './pages/PostApproval'
 import Pricing from './pages/Pricing'
 import SubscriptionManagement from './pages/SubscriptionManagement'
+import DeadlineCalendar from './pages/DeadlineCalendar'
+import ImmigrationGPS from './pages/ImmigrationGPS'
+import FormCompletionAssistant from './pages/FormCompletionAssistant'
 
 // Toast Notification Component
 const ToastContainer = () => {
@@ -149,16 +153,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/gps', label: 'Immigration GPS', icon: Brain },
+    { path: '/form-assistant', label: 'Form Assistant', icon: FileText },
     { path: '/eligibility', label: 'Eligibility Navigator', icon: Target },
     { path: '/documents', label: 'Document Management', icon: FolderOpen },
+    { path: '/deadlines', label: 'Deadlines & Calendar', icon: Calendar },
     { path: '/forms', label: 'Form Generation', icon: FormInput },
     { path: '/adjudicator', label: 'Adjudicator Insights', icon: BarChart3, premium: true },
     { path: '/cases', label: 'Case Tracking', icon: MapPin },
     { path: '/interview', label: 'Interview Prep', icon: MessageSquare },
     { path: '/knowledge', label: 'Knowledge Base', icon: BookOpen },
     { path: '/attorneys', label: 'Attorney Connection', icon: Users },
-    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle, premium: true },
-    { path: '/subscription', label: 'Subscription', icon: Crown }
+    { path: '/post-approval', label: 'Post-Approval', icon: CheckCircle, premium: true }
   ]
 
   const isLocked = (item) => item.premium && plan === 'FREE'
@@ -251,89 +257,115 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </div>
         </nav>
 
+        {/* Compact AI Agent Status - Shows on Hover */}
         <div style={{
           marginTop: 'auto',
-          paddingTop: '20px',
+          paddingTop: '12px',
           borderTop: '1px solid var(--glass-border)'
         }}>
-          <div className="glass-card" style={{ padding: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                background: plan === 'FREE' ? 'linear-gradient(135deg, #3B82F6, #8B5CF6)' : 'linear-gradient(135deg, #F59E0B, #F97316)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Bot size={20} />
-              </div>
-              <div>
-                <div style={{ fontWeight: '600', fontSize: '14px' }}>
-                  {plan === 'FREE' ? 'AEGIS AI' : 'Premium AI'}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--color-success)' }}>● Online</div>
-              </div>
+          <div 
+            className="compact-status"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-full)',
+              background: plan === 'FREE' 
+                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.15))'
+                : 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(249, 115, 22, 0.15))',
+              border: plan === 'FREE'
+                ? '1px solid rgba(59, 130, 246, 0.3)'
+                : '1px solid rgba(245, 158, 11, 0.3)',
+              cursor: 'default',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: plan === 'FREE' ? 'linear-gradient(135deg, #3B82F6, #8B5CF6)' : 'linear-gradient(135deg, #F59E0B, #F97316)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Bot size={12} color="white" />
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {plan === 'FREE' ? '9 Specialist Agents Ready' : 'Full AI Access Enabled'}
-            </div>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: '500',
+              color: plan === 'FREE' ? 'var(--color-secondary)' : 'var(--color-warning)',
+              whiteSpace: 'nowrap'
+            }}>
+              {plan === 'FREE' ? 'AI Online' : 'Premium'}
+            </span>
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              background: 'var(--color-success)',
+              marginLeft: 'auto',
+              animation: 'pulse 2s infinite'
+            }} />
           </div>
         </div>
 
-        {/* User Profile Section in Sidebar */}
+        {/* Compact User Profile - Shows on Hover */}
         {user && (
           <div style={{
-            marginTop: '16px',
-            paddingTop: '16px',
+            marginTop: '8px',
+            paddingTop: '8px',
             borderTop: '1px solid var(--glass-border)'
           }}>
-            <div className="glass-card" style={{ padding: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: '600',
-                  color: 'white',
-                  fontSize: '14px'
-                }}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontWeight: '600',
-                    fontSize: '14px',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {user.name || 'User'}
-                  </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {user.email}
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="icon-button"
-                  title="Sign Out"
-                  style={{ padding: '8px' }}
-                >
-                  <LogOut size={18} />
-                </button>
+            <div 
+              className="compact-user"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 10px',
+                borderRadius: 'var(--radius-full)',
+                background: 'var(--glass-surface)',
+                border: '1px solid var(--glass-border)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '600',
+                color: 'white',
+                fontSize: '10px',
+                flexShrink: 0
+              }}>
+                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '500',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100px'
+              }}>
+                {user.name || 'User'}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="icon-button"
+                title="Sign Out"
+                style={{ padding: '4px', marginLeft: 'auto' }}
+              >
+                <LogOut size={12} />
+              </button>
             </div>
           </div>
         )}
@@ -397,7 +429,8 @@ const TopBar = ({ toggleSidebar }) => {
           left: '16px',
           top: '50%',
           transform: 'translateY(-50%)',
-          color: 'var(--text-muted)'
+          color: 'var(--text-muted)',
+          zIndex: 10
         }} />
         <input
           type="text"
@@ -405,8 +438,14 @@ const TopBar = ({ toggleSidebar }) => {
           placeholder="Search forms, documents, cases..."
           value={globalSearchQuery}
           onChange={(e) => setGlobalSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setGlobalSearch('')
+            }
+          }}
           style={{ paddingLeft: '48px' }}
         />
+        <SearchResultsDropdown />
       </div>
 
       <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -637,6 +676,16 @@ const DashboardLayout = () => {
                 <EligibilityNavigator />
               </PageTransition>
             } />
+            <Route path="/gps" element={
+              <PageTransition>
+                <ImmigrationGPS />
+              </PageTransition>
+            } />
+            <Route path="/form-assistant" element={
+              <PageTransition>
+                <FormCompletionAssistant />
+              </PageTransition>
+            } />
             <Route path="/documents" element={
               <PageTransition>
                 <DocumentManagement />
@@ -671,6 +720,11 @@ const DashboardLayout = () => {
             <Route path="/interview" element={
               <PageTransition>
                 <InterviewPrep />
+              </PageTransition>
+            } />
+            <Route path="/deadlines" element={
+              <PageTransition>
+                <DeadlineCalendar />
               </PageTransition>
             } />
             <Route path="/knowledge" element={

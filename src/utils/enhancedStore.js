@@ -2,11 +2,27 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 
 // ========================================
+// HELPER FUNCTIONS
+// ========================================
+
+// Get description for form types (for search results)
+const getFormDescription = (formName) => {
+  const descriptions = {
+    'I-485': 'Application to Register Permanent Residence or Adjust Status',
+    'I-130': 'Petition for Alien Relative',
+    'I-131': 'Application for Travel Document',
+    'I-765': 'Application for Employment Authorization',
+    'N-400': 'Application for Naturalization'
+  }
+  return descriptions[formName] || 'Immigration Form'
+}
+
+// ========================================
 // GLOBAL STORE - Notifications, Theme, UI State
 // ========================================
 export const useGlobalStore = create((set, get) => ({
   // Theme
-  theme: 'dark',
+  theme: 'light',
   toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
   
   // Notifications
@@ -42,7 +58,178 @@ export const useGlobalStore = create((set, get) => ({
   
   // Search
   globalSearchQuery: '',
+  searchResults: [],
+  isSearching: false,
   setGlobalSearch: (query) => set({ globalSearchQuery: query }),
+
+  // Comprehensive Global Search
+  performGlobalSearch: (query) => {
+    if (!query || query.trim() === '') {
+      set({ searchResults: [], isSearching: false })
+      return
+    }
+
+    set({ isSearching: true })
+    const lowerQuery = query.toLowerCase().trim()
+
+    // Search across all stores
+    const state = get()
+    const results = []
+
+    // Search Navigation/Pages
+    const pages = [
+      { name: 'Dashboard', path: '/dashboard', icon: 'Home', category: 'Navigation' },
+      { name: 'Eligibility Navigator', path: '/eligibility', icon: 'Target', category: 'Navigation' },
+      { name: 'Document Management', path: '/documents', icon: 'FolderOpen', category: 'Navigation' },
+      { name: 'Form Generation', path: '/forms', icon: 'FormInput', category: 'Navigation' },
+      { name: 'Adjudicator Insights', path: '/adjudicator', icon: 'BarChart3', category: 'Navigation' },
+      { name: 'Case Tracking', path: '/cases', icon: 'MapPin', category: 'Navigation' },
+      { name: 'Interview Prep', path: '/interview', icon: 'MessageSquare', category: 'Navigation' },
+      { name: 'Knowledge Base', path: '/knowledge', icon: 'BookOpen', category: 'Navigation' },
+      { name: 'Attorney Connection', path: '/attorneys', icon: 'Users', category: 'Navigation' },
+      { name: 'Post-Approval', path: '/post-approval', icon: 'CheckCircle', category: 'Navigation' },
+      { name: 'Pricing', path: '/pricing', icon: 'Crown', category: 'Account' }
+    ]
+
+    pages.forEach(page => {
+      if (page.name.toLowerCase().includes(lowerQuery)) {
+        results.push({
+          id: `nav-${page.path}`,
+          type: 'navigation',
+          title: page.name,
+          path: page.path,
+          icon: page.icon,
+          category: page.category,
+          description: `Go to ${page.name}`
+        })
+      }
+    })
+
+    // Search Knowledge Base Articles
+    const knowledgeState = useKnowledgeStore.getState()
+    if (knowledgeState?.articles) {
+      knowledgeState.articles.forEach(article => {
+        if (
+          article.title.toLowerCase().includes(lowerQuery) ||
+          article.content.toLowerCase().includes(lowerQuery) ||
+          article.category.toLowerCase().includes(lowerQuery) ||
+          article.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
+        ) {
+          results.push({
+            id: `article-${article.id}`,
+            type: 'article',
+            title: article.title,
+            path: `/knowledge?article=${article.slug}`,
+            icon: 'FileText',
+            category: 'Knowledge Base',
+            description: article.excerpt || article.category
+          })
+        }
+      })
+    }
+
+    // Search Forms (forms are stored as strings like 'I-485', 'I-130')
+    const formState = useFormStore.getState()
+    if (formState?.forms && Array.isArray(formState.forms)) {
+      formState.forms.forEach((form, index) => {
+        // Handle both string forms and object forms
+        const formName = typeof form === 'string' ? form : form.name
+        const formId = typeof form === 'string' ? `form-${form}` : form.id
+        const formDescription = typeof form === 'object' ? form.description : getFormDescription(formName)
+        const formCategory = typeof form === 'object' ? form.category : 'Immigration Forms'
+
+        if (formName.toLowerCase().includes(lowerQuery)) {
+          results.push({
+            id: formId,
+            type: 'form',
+            title: `Form ${formName}`,
+            path: '/forms',
+            icon: 'Clipboard',
+            category: 'Forms',
+            description: formDescription || formCategory
+          })
+        }
+      })
+    }
+
+    // Search Documents
+    const documentState = useDocumentStore.getState()
+    if (documentState?.documents) {
+      documentState.documents.forEach(doc => {
+        if (
+          doc.name.toLowerCase().includes(lowerQuery) ||
+          doc.type?.toLowerCase().includes(lowerQuery) ||
+          doc.category?.toLowerCase().includes(lowerQuery)
+        ) {
+          results.push({
+            id: `doc-${doc.id}`,
+            type: 'document',
+            title: doc.name,
+            path: '/documents',
+            icon: 'File',
+            category: 'Documents',
+            description: `${doc.type} - ${doc.status}`
+          })
+        }
+      })
+    }
+
+    // Search Cases
+    const caseState = useCaseStore.getState()
+    if (caseState?.cases) {
+      caseState.cases.forEach(c => {
+        if (
+          c.caseNumber?.toLowerCase().includes(lowerQuery) ||
+          c.type?.toLowerCase().includes(lowerQuery) ||
+          c.status?.toLowerCase().includes(lowerQuery)
+        ) {
+          results.push({
+            id: `case-${c.id}`,
+            type: 'case',
+            title: `Case ${c.caseNumber}`,
+            path: '/cases',
+            icon: 'Briefcase',
+            category: 'Cases',
+            description: `${c.type} - ${c.status}`
+          })
+        }
+      })
+    }
+
+    // Search Attorneys
+    const attorneyState = useAttorneyStore.getState()
+    if (attorneyState?.attorneys) {
+      attorneyState.attorneys.forEach(attorney => {
+        // Search against name and specialties
+        const nameMatch = attorney.name.toLowerCase().includes(lowerQuery)
+        const specialtyMatch = attorney.specialties?.some(s => s.toLowerCase().includes(lowerQuery))
+        const locationMatch = attorney.location?.toLowerCase().includes(lowerQuery)
+
+        if (nameMatch || specialtyMatch || locationMatch) {
+          results.push({
+            id: `attorney-${attorney.id}`,
+            type: 'attorney',
+            title: attorney.name,
+            path: '/attorneys',
+            icon: 'User',
+            category: 'Attorneys',
+            description: `${attorney.specialties?.[0] || 'Immigration Attorney'} - ${attorney.location}`
+          })
+        }
+      })
+    }
+
+    // Sort results by relevance (title matches first)
+    results.sort((a, b) => {
+      const aTitleMatch = a.title.toLowerCase().startsWith(lowerQuery) ? 1 : 0
+      const bTitleMatch = b.title.toLowerCase().startsWith(lowerQuery) ? 1 : 0
+      return bTitleMatch - aTitleMatch
+    })
+
+    set({ searchResults: results.slice(0, 10), isSearching: false })
+  },
+
+  clearSearch: () => set({ globalSearchQuery: '', searchResults: [], isSearching: false }),
   
   // User Session (Simulated)
   userSession: {
@@ -1949,12 +2136,282 @@ export const useChecklistStore = create(
 export const useThemeStore = create(
   persist(
     (set) => ({
-      theme: 'dark',
+      theme: 'light',
       toggleTheme: () => set((state) => ({
         theme: state.theme === 'dark' ? 'light' : 'dark'
       })),
       setTheme: (theme) => set({ theme })
     }),
     { name: 'aegis-theme' }
+  )
+)
+
+// ========================================
+// DEADLINE CALENDAR STORE - Essential Feature
+// ========================================
+export const useDeadlineStore = create(
+  persist(
+    (set, get) => ({
+      // All deadlines and events
+      deadlines: [
+        {
+          id: 1,
+          title: 'I-485 Interview',
+          date: '2025-01-10',
+          type: 'interview',
+          priority: 'high',
+          caseId: 1,
+          caseNumber: 'MSC-2024-123456',
+          description: 'Citizenship interview at San Francisco Field Office',
+          completed: false,
+          reminderDays: [7, 3, 1],
+          remindersSent: []
+        },
+        {
+          id: 2,
+          title: 'RFE Response Due',
+          date: '2025-02-01',
+          type: 'rfe',
+          priority: 'urgent',
+          caseId: 1,
+          caseNumber: 'MSC-2024-123456',
+          description: 'Submit additional evidence for I-485 application',
+          completed: false,
+          reminderDays: [14, 7, 3, 1],
+          remindersSent: []
+        },
+        {
+          id: 3,
+          title: 'Biometrics Appointment',
+          date: '2024-04-05',
+          type: 'biometrics',
+          priority: 'high',
+          caseId: 1,
+          caseNumber: 'MSC-2024-123456',
+          description: 'Fingerprinting and photo at ASC',
+          completed: true,
+          reminderDays: [7, 3, 1],
+          remindersSent: [7, 3, 1]
+        },
+        {
+          id: 4,
+          title: 'Green Card Expiration',
+          date: '2034-06-20',
+          type: 'expiration',
+          priority: 'medium',
+          caseId: null,
+          caseNumber: null,
+          description: 'Renew green card before expiration',
+          completed: false,
+          reminderDays: [180, 90, 60, 30],
+          remindersSent: []
+        },
+        {
+          id: 5,
+          title: 'Citizenship Eligibility (3-Year)',
+          date: '2027-06-20',
+          type: 'milestone',
+          priority: 'low',
+          caseId: null,
+          caseNumber: null,
+          description: 'Eligible to apply for naturalization',
+          completed: false,
+          reminderDays: [365, 180, 90],
+          remindersSent: []
+        },
+        {
+          id: 6,
+          title: 'Passport Expiration',
+          date: '2026-03-15',
+          type: 'expiration',
+          priority: 'medium',
+          caseId: null,
+          caseNumber: null,
+          description: 'Taiwan passport expires - renew before travel',
+          completed: false,
+          reminderDays: [90, 60, 30, 14],
+          remindersSent: []
+        },
+        {
+          id: 7,
+          title: 'Annual Tax Filing',
+          date: '2025-04-15',
+          type: 'tax',
+          priority: 'high',
+          caseId: null,
+          caseNumber: null,
+          description: 'File federal tax return for residency',
+          completed: false,
+          reminderDays: [30, 14, 7, 1],
+          remindersSent: []
+        }
+      ],
+
+      // Calendar view settings
+      viewMode: 'month', // month, week, list
+      selectedDate: new Date().toISOString().split('T')[0],
+      filterType: 'all', // all, interview, rfe, biometrics, expiration, tax, milestone
+
+      // Notification settings
+      notifications: {
+        email: true,
+        push: true,
+        reminderLeadDays: [7, 3, 1]
+      },
+
+      // Add a new deadline
+      addDeadline: (deadline) => {
+        const newDeadline = {
+          ...deadline,
+          id: Date.now(),
+          completed: false,
+          remindersSent: []
+        }
+        set((state) => ({
+          deadlines: [...state.deadlines, newDeadline]
+        }))
+        return newDeadline.id
+      },
+
+      // Update deadline
+      updateDeadline: (id, updates) => set((state) => ({
+        deadlines: state.deadlines.map(d =>
+          d.id === id ? { ...d, ...updates } : d
+        )
+      })),
+
+      // Toggle deadline completion
+      toggleDeadline: (id) => set((state) => ({
+        deadlines: state.deadlines.map(d =>
+          d.id === id ? { ...d, completed: !d.completed, completedAt: !d.completed ? new Date().toISOString() : null } : d
+        )
+      })),
+
+      // Delete deadline
+      deleteDeadline: (id) => set((state) => ({
+        deadlines: state.deadlines.filter(d => d.id !== id)
+      })),
+
+      // Set view mode
+      setViewMode: (mode) => set({ viewMode: mode }),
+
+      // Set selected date
+      setSelectedDate: (date) => set({ selectedDate: date }),
+
+      // Set filter
+      setFilterType: (type) => set({ filterType: type }),
+
+      // Get deadlines by date range
+      getDeadlinesByRange: (startDate, endDate) => {
+        const { deadlines } = get()
+        return deadlines.filter(d => {
+          const deadlineDate = new Date(d.date)
+          return deadlineDate >= new Date(startDate) && deadlineDate <= new Date(endDate)
+        })
+      },
+
+      // Get upcoming deadlines
+      getUpcomingDeadlines: (days = 30) => {
+        const { deadlines } = get()
+        const now = new Date()
+        const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000)
+        return deadlines
+          .filter(d => !d.completed && new Date(d.date) >= now && new Date(d.date) <= futureDate)
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+      },
+
+      // Get urgent deadlines (within 7 days)
+      getUrgentDeadlines: () => {
+        const { deadlines } = get()
+        const now = new Date()
+        const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+        return deadlines
+          .filter(d => !d.completed && new Date(d.date) >= now && new Date(d.date) <= weekFromNow)
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+      },
+
+      // Get deadlines by type
+      getDeadlinesByType: (type) => {
+        const { deadlines } = get()
+        return deadlines.filter(d => d.type === type)
+      },
+
+      // Get calendar events for a specific month
+      getMonthEvents: (year, month) => {
+        const { deadlines } = get()
+        return deadlines.filter(d => {
+          const date = new Date(d.date)
+          return date.getFullYear() === year && date.getMonth() === month
+        })
+      },
+
+      // Check and generate reminders
+      checkReminders: () => {
+        const { deadlines, notifications } = get()
+        const now = new Date()
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        
+        const reminders = []
+        deadlines.forEach(deadline => {
+          if (deadline.completed) return
+          
+          const deadlineDate = new Date(deadline.date)
+          const daysUntil = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24))
+          
+          deadline.reminderDays.forEach(reminderDay => {
+            if (daysUntil === reminderDay && !deadline.remindersSent.includes(reminderDay)) {
+              reminders.push({
+                deadlineId: deadline.id,
+                title: deadline.title,
+                date: deadline.date,
+                daysUntil,
+                type: deadline.type,
+                priority: deadline.priority
+              })
+            }
+          })
+        })
+        
+        return reminders
+      },
+
+      // Mark reminder as sent
+      markReminderSent: (deadlineId, days) => set((state) => ({
+        deadlines: state.deadlines.map(d =>
+          d.id === deadlineId
+            ? { ...d, remindersSent: [...d.remindersSent, days] }
+            : d
+        )
+      })),
+
+      // Get stats
+      getStats: () => {
+        const { deadlines } = get()
+        const now = new Date()
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        
+        const upcoming = deadlines.filter(d => !d.completed && new Date(d.date) >= today)
+        const overdue = deadlines.filter(d => !d.completed && new Date(d.date) < today)
+        const completed = deadlines.filter(d => d.completed)
+        const urgent = deadlines.filter(d => 
+          !d.completed && 
+          d.priority === 'urgent' && 
+          new Date(d.date) >= today &&
+          new Date(d.date) <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+        )
+
+        return {
+          total: deadlines.length,
+          upcoming: upcoming.length,
+          overdue: overdue.length,
+          completed: completed.length,
+          urgent: urgent.length
+        }
+      },
+
+      // Reset store
+      reset: () => set({ deadlines: [], viewMode: 'month', selectedDate: new Date().toISOString().split('T')[0], filterType: 'all' })
+    }),
+    { name: 'aegis-deadlines' }
   )
 )
